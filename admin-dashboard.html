@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>SmartQueue — Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">⚡</span><span class="logo-text">SmartQueue</span><span class="logo-ver" style="background:#ff4d6d">Admin</span></div>
+    <nav class="nav-tabs" style="margin-left:auto">
+      <button class="nav-tab active" id="tab-queue"     onclick="switchTab('queue')">📋 Queue</button>
+      <button class="nav-tab"        id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
+      <button class="nav-tab"        id="tab-users"     onclick="switchTab('users')">👤 Users</button>
+    </nav>
+    <div style="display:flex;align-items:center;gap:12px;margin-left:16px">
+      <span class="status-dot" id="apiDot"></span>
+      <span id="apiTxt" class="status-text">Connecting…</span>
+      <span id="welcomeText" class="status-text" style="color:#ff4d6d;font-weight:700"></span>
+      <button onclick="logout()" class="btn btn-outline btn-sm">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<div id="suggBanner" class="suggestion-banner hidden">
+  <span>⚠️</span><span id="suggMsg">Queue overloaded</span><button onclick="this.parentElement.classList.add('hidden')">✕</button>
+</div>
+
+<!-- QUEUE TAB -->
+<div id="panel-queue" class="panel active">
+  <div class="container" style="margin-top:24px">
+
+    <div class="admin-hero card glass">
+      <div><h2 class="admin-title">🛡️ Admin Control Centre</h2><p class="admin-sub">Full queue control with real-time monitoring</p></div>
+      <div class="admin-controls-top">
+        <select id="queueSel" class="form-input sm" onchange="switchQueue()" style="width:190px"></select>
+        <button class="btn btn-danger btn-sm" onclick="clearQueue()">🗑️ Clear All</button>
+      </div>
+    </div>
+
+    <!-- Create Queue -->
+    <div class="card">
+      <h3 class="card-title sm">➕ Create Counter</h3>
+      <div class="create-queue-form">
+        <input id="nqName" class="form-input sm" placeholder="Counter name" style="flex:1"/>
+        <input id="nqDesc" class="form-input sm" placeholder="Description" style="flex:1"/>
+        <input id="nqTime" class="form-input sm" type="number" placeholder="Avg min" style="width:90px" value="5"/>
+        <button class="btn btn-accent" onclick="createQueue()">Create</button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="analytics-grid">
+      <div class="analytics-card card"><div class="analytics-icon purple">👥</div><div class="analytics-info"><div class="analytics-val" id="kInQueue">—</div><div class="analytics-lbl">In Queue</div></div></div>
+      <div class="analytics-card card"><div class="analytics-icon green">✅</div><div class="analytics-info"><div class="analytics-val" id="kServed">—</div><div class="analytics-lbl">Served</div></div></div>
+      <div class="analytics-card card"><div class="analytics-icon red">⚠️</div><div class="analytics-info"><div class="analytics-val" id="kMissed">—</div><div class="analytics-lbl">Missed</div></div></div>
+      <div class="analytics-card card"><div class="analytics-icon blue">⏱️</div><div class="analytics-info"><div class="analytics-val" id="kAvg">—</div><div class="analytics-lbl">Avg (min)</div></div></div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card">
+      <div class="bar-header"><span>Queue Load</span><span id="barPct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Service Time + Serve Next -->
+    <div class="card service-card">
+      <h3 class="card-title sm">⚙️ Service Controls</h3>
+      <div class="service-form">
+        <input id="newAvg" class="form-input sm" type="number" min="1" placeholder="Avg minutes"/>
+        <button class="btn btn-accent" onclick="updateTime()">Update Time</button>
+        <button class="btn btn-primary btn-sm" onclick="serveNext()">✅ Serve Next</button>
+      </div>
+    </div>
+
+    <!-- Full Queue Table -->
+    <div class="card">
+      <div class="card-header row-between">
+        <h3 class="card-title sm">📋 Full Queue</h3>
+        <span class="badge" id="qCount">0 people</span>
+      </div>
+      <div class="table-wrap">
+        <table class="queue-table">
+          <thead><tr><th>#</th><th>Name</th><th>Priority</th><th>Status</th><th>Wait</th><th>Window</th><th>Score</th><th>Actions</th></tr></thead>
+          <tbody id="qTableBody"><tr><td colspan="8" class="empty-cell">No users</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS TAB -->
+<div id="panel-analytics" class="panel">
+  <div class="container" style="margin-top:24px">
+    <div class="card"><div class="card-header row-between"><h2 class="card-title">📊 Analytics</h2><select id="analSel" class="form-input sm" onchange="loadAnalytics()" style="width:190px"></select></div></div>
+    <div class="analytics-kpi-row">
+      <div class="kpi-card card"><div class="kpi-val" id="aNoShow">—%</div><div class="kpi-lbl">No-show Rate</div></div>
+      <div class="kpi-card card"><div class="kpi-val" id="aServed">—</div><div class="kpi-lbl">Total Served</div></div>
+      <div class="kpi-card card"><div class="kpi-val" id="aPeak">—</div><div class="kpi-lbl">Peak Hour</div></div>
+      <div class="kpi-card card"><div class="kpi-val" id="aMissed">—</div><div class="kpi-lbl">Total Missed</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="card"><h3 class="card-title sm">Joins per Hour</h3><canvas id="joinsChart" height="200"></canvas></div>
+      <div class="card"><h3 class="card-title sm">Avg Wait Trend</h3><canvas id="waitChart" height="200"></canvas></div>
+    </div>
+    <div class="card"><h3 class="card-title sm">Served vs Missed</h3><canvas id="servedChart" height="120"></canvas></div>
+  </div>
+</div>
+
+<!-- USERS TAB -->
+<div id="panel-users" class="panel">
+  <div class="container" style="margin-top:24px">
+    <div class="card"><h2 class="card-title">👤 User Reliability Scores</h2></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="queue-table">
+          <thead><tr><th>Name</th><th>Score</th><th>Joins</th><th>No-shows</th><th>On-time</th><th>Last Seen</th></tr></thead>
+          <tbody id="usersBody"><tr><td colspan="6" class="empty-cell">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<footer class="footer"><span>⚡ SmartQueue — Admin Portal</span><span id="clock" class="footer-clock"></span></footer>
+
+<script src="auth.js"></script>
+<script src="admin-app.js"></script>
+</body>
+</html>
