@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>SmartQueue — User Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><span class="logo-icon">⚡</span><span class="logo-text">SmartQueue</span><span class="logo-ver">User</span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px">
+      <span id="welcomeText" class="status-text" style="color:#a78bfa;font-weight:600"></span>
+      <span class="status-dot" id="apiDot"></span>
+      <span id="apiTxt" class="status-text">Connecting…</span>
+      <button onclick="logout()" class="btn btn-outline btn-sm">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<div class="live-ticker"><span class="ticker-label">🔴 LIVE</span><span id="tickerText">Loading…</span></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-icon">🔔</span><span id="alertMsg">Your turn is coming!</span></div>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Your Queue<br/><span class="gradient-text">Dashboard</span></h1>
+    <p class="hero-sub">Join a counter, track your position, and check in when called.</p>
+  </div>
+  <div class="hero-visual"><div class="pulse-ring"></div><div class="pulse-ring delay-1"></div><div class="pulse-ring delay-2"></div><div class="hero-icon">🎯</div></div>
+</section>
+
+<div class="container">
+  <!-- Counter Selector -->
+  <div class="card" id="selectorCard">
+    <div class="card-header"><h2 class="card-title">Select a Counter</h2><p class="card-subtitle">Choose your service</p></div>
+    <div id="queueSelectorGrid" class="queue-selector-grid"><div class="empty-state">Loading counters…</div></div>
+  </div>
+
+  <!-- Join Form -->
+  <div class="join-card card glass">
+    <div class="card-header">
+      <h2 class="card-title">Join Queue</h2>
+      <p class="card-subtitle">Counter: <strong id="selQName">—</strong></p>
+    </div>
+    <div class="priority-toggle">
+      <label class="toggle-label" for="priCheck">
+        <input type="checkbox" id="priCheck"/>
+        <span class="toggle-switch"></span>
+        <span class="toggle-text">⭐ Priority Access <small>Jump to front</small></span>
+      </label>
+    </div>
+    <div id="joinErr" class="error-msg hidden"></div>
+    <button id="joinBtn" class="btn btn-primary btn-full" onclick="joinQueue()">
+      <span class="btn-spinner hidden" id="joinSpin"></span>
+      <span id="joinBtnTxt">Join Queue</span>
+    </button>
+  </div>
+
+  <!-- Ticket -->
+  <div id="ticketCard" class="ticket-card hidden">
+    <div class="ticket-header">
+      <div><span class="ticket-label">YOUR TICKET</span><span class="ticket-name" id="tName"></span></div>
+      <div class="ticket-queue-name" id="tQueue"></div>
+    </div>
+    <div class="ticket-body">
+      <div class="ticket-stat"><div class="ticket-stat-value" id="tPos">—</div><div class="ticket-stat-label">Position</div></div>
+      <div class="ticket-divider"></div>
+      <div class="ticket-stat"><div class="ticket-stat-value" id="tWait">—</div><div class="ticket-stat-label">Wait (min)</div></div>
+      <div class="ticket-divider"></div>
+      <div class="ticket-stat">
+        <div class="countdown-wrap">
+          <svg class="countdown-svg" viewBox="0 0 60 60">
+            <circle class="countdown-bg" cx="30" cy="30" r="26"/>
+            <circle class="countdown-ring" id="cdRing" cx="30" cy="30" r="26" stroke-dasharray="163" stroke-dashoffset="0"/>
+          </svg>
+          <div class="countdown-text" id="cdText">—</div>
+        </div>
+        <div class="ticket-stat-label">Time Left</div>
+      </div>
+    </div>
+    <div class="arrival-window" id="arrWin">
+      <span class="aw-icon">🕐</span>
+      <span>Arrive between <strong id="winS">—</strong> – <strong id="winE">—</strong></span>
+    </div>
+    <div id="statusBadgeWrap" style="padding:0 24px 8px;text-align:right">
+      <span id="statusBadge" class="qi-status waiting">Waiting</span>
+    </div>
+    <div class="ticket-footer">
+      <button class="btn btn-outline btn-sm" onclick="showQr()">📱 Show QR</button>
+      <button class="btn btn-accent btn-sm" id="checkinBtn" onclick="doCheckin()">✅ Check In</button>
+      <button class="btn btn-outline btn-sm" onclick="leaveQueue()">Leave</button>
+    </div>
+    <div class="reliability-row">
+      <span class="rel-label">Reliability Score</span>
+      <span class="rel-badge high" id="relBadge">100</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card card"><div class="stat-icon">👥</div><div class="stat-val" id="statTotal">—</div><div class="stat-lbl">In Queue</div></div>
+    <div class="stat-card card"><div class="stat-icon">⏱️</div><div class="stat-val" id="statAvg">—</div><div class="stat-lbl">Avg (min)</div></div>
+    <div class="stat-card card"><div class="stat-icon">✅</div><div class="stat-val" id="statServed">—</div><div class="stat-lbl">Served Today</div></div>
+  </div>
+
+  <!-- Live Queue -->
+  <div class="card queue-list-card">
+    <div class="card-header row-between">
+      <h3 class="card-title sm">Live Queue — <span id="liveLabel">—</span></h3>
+      <span class="refresh-badge">⚡ Real-time</span>
+    </div>
+    <div id="queueList" class="queue-list"><div class="empty-state">Select a counter to view queue</div></div>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="qr-modal hidden" onclick="if(event.target===this)closeQr()">
+  <div class="qr-modal-box">
+    <button class="qr-close" onclick="closeQr()">✕</button>
+    <h2 class="qr-title">📱 Your Check-In QR</h2>
+    <p class="qr-sub">Scan at the counter or press Check In</p>
+    <div id="qrCont" class="qr-container"></div>
+    <div class="qr-token-wrap"><span class="qr-token-label">TOKEN</span><code id="qrTok" class="qr-token">—</code></div>
+    <button class="btn btn-primary btn-sm" onclick="doCheckin();closeQr()">✅ Check In Now</button>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<footer class="footer"><span>⚡ SmartQueue — User Portal</span><span id="clock" class="footer-clock"></span></footer>
+
+<script src="auth.js"></script>
+<script src="user-app.js"></script>
+</body>
+</html>
