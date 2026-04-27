@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>SmartQueue — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0a0d14;--surface:#111621;--surface2:#161c2d;--border:rgba(255,255,255,0.08);--text:#e8eaf0;--muted:#8891a5;--primary:#6c63ff;--primary-g:linear-gradient(135deg,#6c63ff,#a78bfa);--accent:#00d4aa;--danger:#ff4d6d;--green:#22c55e;--radius:14px;--t:0.25s ease}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(108,99,255,.25),transparent);pointer-events:none}
+    .login-wrap{width:100%;max-width:440px;position:relative;z-index:1}
+    .logo{text-align:center;margin-bottom:32px}
+    .logo-icon{font-size:2.5rem;display:block;filter:drop-shadow(0 0 20px rgba(108,99,255,.8));margin-bottom:10px}
+    .logo-text{font-size:1.8rem;font-weight:900;background:var(--primary-g);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-sub{color:var(--muted);font-size:.88rem;margin-top:4px}
+    .card{background:rgba(17,22,33,.85);backdrop-filter:blur(20px);border:1px solid rgba(108,99,255,.2);border-radius:20px;padding:36px}
+    .tabs{display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:28px}
+    .tab{flex:1;padding:9px;border-radius:8px;border:none;background:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:var(--t)}
+    .tab.active{background:var(--primary);color:#fff}
+    .form-group{margin-bottom:18px}
+    .form-label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+    .form-input{width:100%;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:.93rem;outline:none;transition:var(--t)}
+    .form-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.15)}
+    .role-row{display:flex;gap:10px;margin-bottom:18px}
+    .role-opt{flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:var(--t);text-align:center}
+    .role-opt.selected{border-color:var(--primary);background:rgba(108,99,255,.12);color:var(--text)}
+    .btn{width:100%;padding:14px;border-radius:10px;background:var(--primary-g);color:#fff;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:700;border:none;cursor:pointer;transition:var(--t);box-shadow:0 4px 20px rgba(108,99,255,.4);margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(108,99,255,.5)}
+    .spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .err{padding:10px 14px;border-radius:8px;background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:#ff4d6d;font-size:.84rem;margin-bottom:16px}
+    .hidden{display:none!important}
+    .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.78rem;margin:20px 0}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .demo-box{background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:10px;padding:14px;font-size:.8rem;color:var(--accent);margin-top:20px}
+    .demo-box strong{display:block;margin-bottom:6px;font-size:.82rem}
+    .demo-row{display:flex;justify-content:space-between;color:var(--muted);margin-top:3px}
+    .demo-row span:last-child{color:var(--text);font-family:monospace}
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo">
+    <span class="logo-icon">⚡</span>
+    <div class="logo-text">SmartQueue</div>
+    <div class="logo-sub">Intelligent Queue Management System</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" onclick="showTab('login')">Sign In</button>
+      <button class="tab"        id="tabReg"   onclick="showTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="formLogin">
+      <div id="loginErr" class="err hidden"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input id="loginUser" class="form-input" type="text" placeholder="Enter username" autocomplete="username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="loginPass" class="form-input" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn" onclick="doLogin()">
+        <span id="loginSpinner" class="spinner hidden"></span>
+        <span id="loginBtnText">Sign In</span>
+      </button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="formRegister" class="hidden">
+      <div id="regErr" class="err hidden"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input id="regUser" class="form-input" type="text" placeholder="Choose username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="regEmail" class="form-input" type="email" placeholder="your@email.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="regPass" class="form-input" type="password" placeholder="Min 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">I am a</label>
+        <div class="role-row">
+          <button class="role-opt selected" id="roleUser" onclick="selectRole('user')">👤 User</button>
+          <button class="role-opt"          id="roleAdmin" onclick="selectRole('admin')">🛡️ Admin</button>
+        </div>
+      </div>
+      <button class="btn" onclick="doRegister()">
+        <span id="regSpinner" class="spinner hidden"></span>
+        <span id="regBtnText">Create Account</span>
+      </button>
+    </div>
+
+    <div class="divider">Demo Credentials</div>
+    <div class="demo-box">
+      <strong>🛡️ Admin</strong>
+      <div class="demo-row"><span>Username</span><span>admin</span></div>
+      <div class="demo-row"><span>Password</span><span>admin123</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:5000';
+let selectedRole = 'user';
+
+function showTab(t) {
+  document.getElementById('formLogin').classList.toggle('hidden', t !== 'login');
+  document.getElementById('formRegister').classList.toggle('hidden', t !== 'register');
+  document.getElementById('tabLogin').classList.toggle('active', t === 'login');
+  document.getElementById('tabReg').classList.toggle('active', t === 'register');
+}
+
+function selectRole(r) {
+  selectedRole = r;
+  document.getElementById('roleUser').classList.toggle('selected', r === 'user');
+  document.getElementById('roleAdmin').classList.toggle('selected', r === 'admin');
+}
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.classList.add('hidden');
+  if (!u || !p) { errEl.textContent='Please enter username and password'; errEl.classList.remove('hidden'); return; }
+  setLoading('login', true);
+  try {
+    const r = await fetch(API+'/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u, password:p})});
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Login failed'; errEl.classList.remove('hidden'); return; }
+    localStorage.setItem('sq_token', d.token);
+    localStorage.setItem('sq_role', d.role);
+    localStorage.setItem('sq_username', d.username);
+    window.location.href = d.role === 'admin' ? 'admin-dashboard.html' : 'user-dashboard.html';
+  } catch(e) { errEl.textContent='Cannot reach server'; errEl.classList.remove('hidden'); }
+  finally { setLoading('login', false); }
+}
+
+async function doRegister() {
+  const u = document.getElementById('regUser').value.trim();
+  const e = document.getElementById('regEmail').value.trim();
+  const p = document.getElementById('regPass').value.trim();
+  const errEl = document.getElementById('regErr');
+  errEl.classList.add('hidden');
+  if (!u || !e || !p) { errEl.textContent='All fields required'; errEl.classList.remove('hidden'); return; }
+  if (p.length < 6) { errEl.textContent='Password must be at least 6 characters'; errEl.classList.remove('hidden'); return; }
+  setLoading('reg', true);
+  try {
+    const r = await fetch(API+'/auth/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u, email:e, password:p, role:selectedRole})});
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Registration failed'; errEl.classList.remove('hidden'); return; }
+    localStorage.setItem('sq_token', d.token);
+    localStorage.setItem('sq_role', d.role);
+    localStorage.setItem('sq_username', d.username);
+    window.location.href = d.role === 'admin' ? 'admin-dashboard.html' : 'user-dashboard.html';
+  } catch(e2) { errEl.textContent='Cannot reach server'; errEl.classList.remove('hidden'); }
+  finally { setLoading('reg', false); }
+}
+
+function setLoading(form, on) {
+  document.getElementById(form+'Spinner').classList.toggle('hidden', !on);
+  document.getElementById(form+'BtnText').textContent = on ? (form==='login'?'Signing in…':'Creating…') : (form==='login'?'Sign In':'Create Account');
+}
+
+// Auto-redirect if already logged in
+const tok = localStorage.getItem('sq_token');
+const role = localStorage.getItem('sq_role');
+if (tok && role) window.location.href = role === 'admin' ? 'admin-dashboard.html' : 'user-dashboard.html';
+</script>
+</body>
+</html>
