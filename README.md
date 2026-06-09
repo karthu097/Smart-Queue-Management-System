@@ -141,19 +141,6 @@ http://localhost:8080
 
 ---
 
-## 📸 Screenshots
-
-### Home Page
-(Add Screenshot Here)
-
-### Queue Dashboard
-(Add Screenshot Here)
-
-### Admin Panel
-(Add Screenshot Here)
-
----
-
 ## 🔄 Workflow
 
 1. User registers or accesses the system.
